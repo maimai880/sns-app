@@ -8,8 +8,9 @@ import {redirect} from "next/navigation"
 const roboto = Roboto_Flex({subsets: ["latin"]})
 
 export default async function Home() {
-  if (await getServerSession(nextAuthOptions)) {
-    redirect("/home")
+  const session = await getServerSession(nextAuthOptions)
+  if (session) {
+    redirect(session.user.finishInit ? "/home" : "/auth/init")
   }
 
   return (

@@ -20,6 +20,7 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
+      "@/prisma-types":["./prisma/generated/zod/index.ts"],
       "$/*": ["./public/*"]
     }
   },

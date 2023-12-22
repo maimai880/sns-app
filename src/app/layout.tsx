@@ -16,6 +16,8 @@ export default function RootLayout({children}: {
   return (
     <html lang="ja">
     <body className={inter.className}>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,300,0,-25"/>
     <KumaRegistry>
       {children}
     </KumaRegistry>
