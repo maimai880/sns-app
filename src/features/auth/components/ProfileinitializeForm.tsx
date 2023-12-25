@@ -18,7 +18,6 @@ export const ProfileInitializeForm: FC<Props> = (props) => {
   const router = useRouter()
 
   const {control, handleSubmit} = useForm({
-    mode: "onChange",
     defaultValues: {
       image: "",
       name: props.user.name,
