@@ -13,3 +13,7 @@ export const middleware = async (req: NextRequest) => {
     return NextResponse.rewrite(new URL("/auth/init", req.url))
   }
 }
+
+export const config = {
+  matcher: "/(!api)/(.*)"
+}
