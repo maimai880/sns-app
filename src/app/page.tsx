@@ -1,9 +1,9 @@
 import {Roboto_Flex} from "next/font/google"
 import {Flex, Heading, HStack, Image, Link, Spacer, Text, VStack} from "@kuma-ui/core"
-import {GoogleLoginButton} from "@/components/GoogleLoginButton"
 import {getServerSession} from "next-auth"
 import {nextAuthOptions} from "@/lib/next-auth"
 import {redirect} from "next/navigation"
+import {GoogleLoginButton} from "@/features/auth/components/GoogleLoginButton"
 
 const roboto = Roboto_Flex({subsets: ["latin"]})
 
@@ -27,7 +27,9 @@ export default async function Home() {
           src="/Social-media-Cristina.jpg"
           alt="bg image"
           width="80%"
+          maxHeight="100%"
           height="auto"
+          objectFit="contain"
         />
 
         <Link
