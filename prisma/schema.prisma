@@ -31,13 +31,21 @@ model Account {
   @@unique([provider, providerAccountId])
 }
 
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
   emailVerified DateTime?
 
-  name      String?
-  image     String?
+  name      String
+  image     String
   bio       String?
   isPrivate Boolean @default(false)
 
@@ -47,4 +55,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   accounts Account[]
+  sessions Session[]
+
+  @@index([id])
 }

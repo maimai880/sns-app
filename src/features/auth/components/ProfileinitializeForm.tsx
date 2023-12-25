@@ -1,56 +1,39 @@
 "use client"
 
 import {Box, Button, Image, Input, Spacer, Text, VStack} from "@kuma-ui/core"
-import {ChangeEventHandler, FC, useRef, useState} from "react"
-import {User} from "@/prisma-types"
+import {FC} from "react"
 import AddAPhotoIcon from "$/icon/add_a_photo_FILL0_wght300_GRAD-25_opsz24.svg"
-import {useForm} from "react-hook-form"
-import {imageUrl2DataUrl} from "@/util/ImageUrl2DataUrl"
 import {useRouter} from "next/navigation"
+import {UserInSession} from "@/types/session"
+import {Controller, useForm} from "react-hook-form"
+import {ButtonWithInputFile} from "@/components/ButtonWithFileInput"
+import {omit} from "@/util/omit"
+import {file2DataUrl} from "@/util/file2DataUrl"
 
 interface Props {
-  user: User
+  user: UserInSession
 }
 
 export const ProfileInitializeForm: FC<Props> = (props) => {
   const router = useRouter()
 
-  const [image, setImage] = useState(props.user.image || "")
+  const {control, handleSubmit} = useForm({
+    mode: "onChange",
+    defaultValues: {
+      image: "",
+      name: props.user.name,
+      bio: props.user.bio || "",
+      isPrivate: props.user.isPrivate,
+    },
+  })
 
-  const imageFileInputRef = useRef<HTMLInputElement>(null)
-
-  const handleImageFileSelect: ChangeEventHandler<HTMLInputElement> = async (event) => {
-    const file = event.target.files?.[0]
-    if (!file) return console.error("Error: File not found.")
-    if (file.size > 2 * 1024 * 1024) return console.error("Error: File size is too large.")
-
-    const reader = new FileReader()
-    reader.readAsDataURL(file)
-
-    reader.onloadend = () => {
-      const result = reader.result
-
-      if (typeof result === "string") {
-        setImage(result)
-      } else {
-        console.error("Error: File could not be converted to string.")
-      }
-    }
-  }
-
-  const {register, handleSubmit} = useForm<{
-    name: string,
-    bio: string,
-    isPrivate: boolean
-  }>()
-
-  const onSubmit = handleSubmit(async (data) => {
+  const onSubmit = handleSubmit((data) => {
     fetch(`/api/users/${props.user.id}`, {
       method: "PUT",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
         name: data.name,
-        image: image.startsWith("http") ? await imageUrl2DataUrl(image) : image,
+        image: data.image || undefined,
         bio: data.bio,
         isPrivate: data.isPrivate,
         finishInit: true,
@@ -58,117 +41,138 @@ export const ProfileInitializeForm: FC<Props> = (props) => {
     }).then(res => res.json()).then(res => {
       console.log(res)
       router.push("/home")
-    }).catch(console.error)
+    }).catch(alert)
   })
 
   return (
-    <>
-      <input
-        ref={imageFileInputRef}
-        onChange={handleImageFileSelect}
-        type="file"
-        accept="image/*"
-        style={{display: "none"}}
+    <VStack
+      as="form"
+      onSubmit={onSubmit}
+      alignItems="center"
+      width="45%"
+    >
+      <Controller
+        control={control}
+        name="image"
+        render={(p) =>
+          <Box position="relative" width="30%" aspectRatio={1}>
+            <Image
+              src={p.field.value || props.user.image}
+              alt="profile image"
+              width="100%"
+              aspectRatio={1}
+              outline="1px solid"
+              outlineColor="colors.border"
+              borderRadius="100%"
+            />
+
+            <ButtonWithInputFile
+              inputProps={{
+                accept: "image/*",
+                ...omit(p.field, ["value"]),
+                onChange: async (e) => {
+                  if (!e.target.files?.[0]) return
+                  if (e.target.files[0].size > 1024 * 1024 * 2) return alert("2MB以下の画像を選択してください")
+
+                  p.field.onChange(await file2DataUrl(e.target.files[0]))
+                }
+              }}
+              position="absolute"
+              right={0}
+              bottom={0}
+              p={4}
+              pl={8}
+              width="25%"
+              height="25%"
+              bg="rgba(0,0,0,0.5)"
+              borderRadius="100%"
+              border="none"
+              transition=".3"
+              _hover={{transform: "scale(1.1)"}}
+            >
+              <AddAPhotoIcon size="small" fill="white" width="100%" height="100%"/>
+            </ButtonWithInputFile>
+          </Box>
+        }
       />
 
+      <Spacer height={8}/>
+
       <VStack
-        alignItems="center"
-        width="45%"
+        width="100%"
+        alignItems="flex-start"
       >
-        <Box position="relative" width="30%" aspectRatio={1}>
-          <Image
-            src={image}
-            alt="profile image"
-            width="100%"
-            aspectRatio={1}
-            outline="1px solid"
-            outlineColor="colors.border"
-            borderRadius="100%"
-          />
-
-          <Button
-            onClick={() => imageFileInputRef.current?.click()}
-            position="absolute"
-            right={0}
-            bottom={0}
-            p={4}
-            pl={6}
-            width="25%"
-            height="25%"
-            bg="rgba(0,0,0,0.5)"
-            borderRadius="100%"
-            transition=".3"
-            _hover={{transform: "scale(1.1)"}}
-          >
-            <AddAPhotoIcon size="small" fill="white" width="100%" height="100%"/>
-          </Button>
-        </Box>
-
-        <Spacer height={8}/>
-
-        <VStack
-          as="form"
-          onSubmit={onSubmit}
-          width="100%"
-          alignItems="flex-start"
-        >
-          <Text as="label">表示名</Text>
-          <Spacer height={4}/>
-          <Input
-            {...register("name")}
-            placeholder="表示名を入力してください"
-            defaultValue={props.user.name || ""}
-            width="100%"
-            height={40}
-            fontSize="fontSizes.md"
-          />
-
-          <Spacer height={16}/>
-
-          <Text as="label">自己紹介</Text>
-          <Spacer height={4}/>
-          <Input
-            as="textarea"
-            {...register("bio")}
-            placeholder="自己紹介を入力してください"
-            defaultValue={props.user.bio || ""}
-            width="100%"
-            height={120}
-            fontSize="fontSizes.md"
-            resize="none"
-          />
-
-          <Spacer height={16}/>
-
-          <Text as="label" htmlFor="checkbox" userSelect="none" cursor="pointer">
+        <Text as="label">表示名</Text>
+        <Spacer height={4}/>
+        <Controller
+          control={control}
+          name="name"
+          render={(p) =>
             <Input
-              type="checkbox"
-              id="checkbox"
-              {...register("isPrivate")}
-              defaultChecked={props.user.isPrivate}
-              width={12}
-              aspectRatio={1}
-              transform="scale(1.5)"
+              {...p.field}
+              placeholder="表示名を入力してください"
+              width="100%"
+              height={40}
+              fontSize="fontSizes.md"
             />
-            <Spacer width={8} horizontal/>
-            非公開アカウント
-          </Text>
+          }
+        />
 
+        <Spacer height={16}/>
 
-          <Spacer height={40}/>
+        <Text as="label">自己紹介</Text>
+        <Spacer height={4}/>
+        <Controller
+          control={control}
+          name="bio"
+          render={(p) =>
+            <Input
+              {...p.field}
+              as="textarea"
+              placeholder="自己紹介を入力してください"
+              width="100%"
+              height={120}
+              fontSize="fontSizes.md"
+              resize="none"
+            />
+          }
+        />
 
-          <Button
-            type="submit"
-            variant="primary"
-            alignSelf="center"
-            py={14}
-            width="45%"
-            fontSize="fontSizes.md"
-          >
-            プロフィールを保存
-          </Button>
-        </VStack>
+        <Spacer height={16}/>
+
+        <Controller
+          control={control}
+          name="isPrivate"
+          render={(p) =>
+            <Text as="label" htmlFor="checkbox" userSelect="none" cursor="pointer">
+              {/* @ts-ignore*/}
+              <Input
+                {...p.field}
+                type="checkbox"
+                id="checkbox"
+                width={12}
+                aspectRatio={1}
+                transform="scale(1.5)"
+              />
+              <Spacer width={8} horizontal/>
+              非公開アカウント
+            </Text>
+          }
+        />
+
+        <Spacer height={40}/>
+
+        <Button
+          type="submit"
+          variant="primary"
+          alignSelf="center"
+          py={14}
+          width="45%"
+          fontSize="fontSizes.md"
+        >
+          プロフィールを保存
+        </Button>
       </VStack>
-    </>
+    </VStack>
   )
 }

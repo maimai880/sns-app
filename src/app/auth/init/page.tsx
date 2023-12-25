@@ -7,7 +7,7 @@ import {redirect} from "next/navigation"
 
 export default async function Page() {
   const session = await getServerSession(nextAuthOptions)
-  if (!session) redirect("/")
+  if (!session || session.user.finishInit) redirect("/")
 
   return (
     <Flex
