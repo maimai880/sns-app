@@ -3,45 +3,16 @@
 import {Box, Button, Image, Input, Spacer, Text, VStack} from "@kuma-ui/core"
 import {FC} from "react"
 import AddAPhotoIcon from "$/icon/add_a_photo_FILL0_wght300_GRAD-25_opsz24.svg"
-import {useRouter} from "next/navigation"
 import {UserInSession} from "@/lib/next-auth"
-import {Controller, useForm} from "react-hook-form"
 import {ButtonWithInputFile} from "@/components/ButtonWithFileInput"
-import {omit} from "@/util/omit"
-import {file2DataUrl} from "@/util/file2DataUrl"
+import {useEditProfileForm} from "@/features/auth/hooks/useEditProfileForm"
 
 interface Props {
   user: UserInSession
 }
 
 export const ProfileInitializeForm: FC<Props> = (props) => {
-  const router = useRouter()
-
-  const {control, handleSubmit} = useForm({
-    defaultValues: {
-      image: "",
-      name: props.user.name,
-      bio: props.user.bio || "",
-      isPrivate: props.user.isPrivate,
-    },
-  })
-
-  const onSubmit = handleSubmit((data) => {
-    fetch(`/api/users/${props.user.id}`, {
-      method: "PUT",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        name: data.name,
-        image: data.image || undefined,
-        bio: data.bio,
-        isPrivate: data.isPrivate,
-        finishInit: true,
-      })
-    }).then(res => res.json()).then(res => {
-      console.log(res)
-      router.push("/home")
-    }).catch(alert)
-  })
+  const {onSubmit, ImageInput, NameInput, BioInput, IsPrivateInput} = useEditProfileForm(props.user)
 
   return (
     <VStack
@@ -50,13 +21,15 @@ export const ProfileInitializeForm: FC<Props> = (props) => {
       alignItems="center"
       width="45%"
     >
-      <Controller
-        control={control}
-        name="image"
-        render={(p) =>
-          <Box position="relative" width="30%" aspectRatio={1}>
+      <ImageInput
+        render={(p) => (
+          <Box
+            position="relative"
+            width="30%"
+            aspectRatio={1}
+          >
             <Image
-              src={p.field.value || props.user.image}
+              src={p.imageSrc}
               alt="profile image"
               width="100%"
               aspectRatio={1}
@@ -66,16 +39,7 @@ export const ProfileInitializeForm: FC<Props> = (props) => {
             />
 
             <ButtonWithInputFile
-              inputProps={{
-                accept: "image/*",
-                ...omit(p.field, ["value"]),
-                onChange: async (e) => {
-                  if (!e.target.files?.[0]) return
-                  if (e.target.files[0].size > 1024 * 1024 * 2) return alert("2MB以下の画像を選択してください")
-
-                  p.field.onChange(await file2DataUrl(e.target.files[0]))
-                }
-              }}
+              inputProps={p.inputProps}
               position="absolute"
               right={0}
               bottom={0}
@@ -89,10 +53,15 @@ export const ProfileInitializeForm: FC<Props> = (props) => {
               transition=".3"
               _hover={{transform: "scale(1.1)"}}
             >
-              <AddAPhotoIcon size="small" fill="white" width="100%" height="100%"/>
+              <AddAPhotoIcon
+                size="small"
+                fill="white"
+                width="100%"
+                height="100%"
+              />
             </ButtonWithInputFile>
           </Box>
-        }
+        )}
       />
 
       <Spacer height={8}/>
@@ -103,9 +72,7 @@ export const ProfileInitializeForm: FC<Props> = (props) => {
       >
         <Text as="label">表示名</Text>
         <Spacer height={4}/>
-        <Controller
-          control={control}
-          name="name"
+        <NameInput
           render={(p) =>
             <Input
               {...p.field}
@@ -121,9 +88,7 @@ export const ProfileInitializeForm: FC<Props> = (props) => {
 
         <Text as="label">自己紹介</Text>
         <Spacer height={4}/>
-        <Controller
-          control={control}
-          name="bio"
+        <BioInput
           render={(p) =>
             <Input
               {...p.field}
@@ -139,9 +104,7 @@ export const ProfileInitializeForm: FC<Props> = (props) => {
 
         <Spacer height={16}/>
 
-        <Controller
-          control={control}
-          name="isPrivate"
+        <IsPrivateInput
           render={(p) =>
             <Text as="label" htmlFor="checkbox" userSelect="none" cursor="pointer">
               {/* @ts-ignore*/}
