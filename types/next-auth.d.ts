@@ -1,6 +1,4 @@
-import NextAuth from "next-auth"
-import User from "@/prisma-types"
-import {UserInSession} from "@/types/session"
+import {UserInSession} from "@/lib/next-auth"
 
 declare module "next-auth" {
   interface Session {

@@ -32,3 +32,13 @@ export const nextAuthOptions: NextAuthOptions = {
     }
   }
 }
+
+export type UserInSession = Pick<User,
+  "id" |
+  "email" |
+  "name" |
+  "image" |
+  "bio" |
+  "isPrivate" |
+  "finishInit"
+>;
