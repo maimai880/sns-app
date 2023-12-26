@@ -4,7 +4,7 @@ import {getServerSession} from "next-auth"
 import {nextAuthOptions} from "@/lib/next-auth"
 import prisma from "@/lib/prisma"
 import {dataUrl2File} from "@/util/dataUrl2File"
-import {put} from "@vercel/blob"
+import {del, put} from "@vercel/blob"
 
 /*
  * プロフィールを更新API
@@ -49,7 +49,13 @@ export async function PUT(req: NextRequest, {params}: { params: { id: string } }
 
     if (body.image) {
       const file = await dataUrl2File(body.image)
-      const result = await put("avatar", file, {access: "public", contentType: file.type})
+
+      const result = await put(
+        "user.image",
+        file,
+        {access: "public", contentType: body.image.match(/[^:]\w+\/[\w-+\d.]+(?=;|,)/)?.[0]}
+      )
+      await del(session.user.image)
 
       await prisma.user.update({
         where: {id: params.id},
